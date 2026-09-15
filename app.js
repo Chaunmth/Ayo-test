@@ -12,6 +12,8 @@ const $ = (id) => document.getElementById(id);
 
 const stage      = $('stage');
 const ayo        = $('ayo');
+const track      = document.querySelector('.track');
+const arcPath    = $('arcPath');
 const trackDot   = $('trackDot');
 const statusEl   = $('status');
 const cam        = $('cam');
@@ -25,16 +27,26 @@ const intro      = $('intro');
 const infoSheet  = $('infoSheet');
 const btnSound   = $('btnSound');
 const btnCam     = $('btnCam');
+const icoSoundOn  = $('icoSoundOn');
+const icoSoundOff = $('icoSoundOff');
 
 // ————— Réglages —————
 
 const SHEET   = { cols: 8, rows: 4, frames: 32 };
-const MARGIN  = 0.15;   // bords du champ caméra ignorés (pas besoin de tendre le bras)
-const SMOOTH  = 0.18;   // lissage : 0 = figé, 1 = brut
+// Part du champ caméra ignorée de chaque côté. Élevée volontairement : seule
+// la zone centrale compte, donc un petit geste parcourt toute l'animation.
+const MARGIN  = 0.28;
+// Constante de temps du lissage, en secondes : plus c'est petit, plus Ayo
+// répond sec. Exprimée en temps et non par image, pour que le ressenti soit
+// le même sur un écran 60 Hz et sur un 120 Hz.
+const TAU     = 0.09;
 const LOST_MS = 1200;   // délai avant de considérer la main perdue
 const VOLUME  = 0.8;
+const ARC_VB  = 220;    // largeur du viewBox de l'arc
 
-const isSmallScreen = Math.min(window.innerWidth, window.innerHeight) < 560;
+// même condition que les <link rel="preload"> de index.html
+const isSmallScreen =
+  window.matchMedia('(max-width: 560px), (max-height: 560px)').matches;
 
 // ————— État —————
 
@@ -58,15 +70,35 @@ function setStatus(text, cls = '') {
   statusEl.className = 'status' + (cls ? ' ' + cls : '');
 }
 
-// ————— Sprite légère sur petit écran (moins de mémoire à décoder) —————
+// ————— Sprite : allégée sur petit écran (moins de mémoire à décoder) —————
 
-if (isSmallScreen) {
-  ayo.style.backgroundImage = 'url("assets/ayo_sheet_sm.jpg")';
+const SHEET_URL = isSmallScreen
+  ? 'assets/ayo_sheet_sm.webp'
+  : 'assets/ayo_sheet.webp';
+ayo.style.backgroundImage = `url("${SHEET_URL}")`;
+
+// ————— Position du repère sur l'arc —————
+
+const arcLen = arcPath.getTotalLength();
+let arcScale = 1;
+
+function measureArc() {
+  arcScale = track.getBoundingClientRect().width / ARC_VB;
 }
+window.addEventListener('resize', measureArc);
+window.addEventListener('orientationchange', () => setTimeout(measureArc, 300));
+measureArc();
 
 // ————— Boucle de rendu —————
 
+let lastTs = 0;
+
 function render(ts) {
+  // temps écoulé, borné : au retour d'un onglet en arrière-plan, l'écart
+  // peut valoir plusieurs secondes et ferait sauter Ayo d'un coup
+  const dt = lastTs ? Math.min((ts - lastTs) / 1000, 0.1) : 1 / 60;
+  lastTs = ts;
+
   // personne aux commandes : Ayo danse tout seul, doucement
   if (mode === 'idle') {
     pos = 0.5 + Math.sin(ts / 2400) * 0.45;
@@ -76,7 +108,7 @@ function render(ts) {
     setStatus('montre ta main à la caméra');
   }
 
-  smooth += (pos - smooth) * SMOOTH;
+  smooth += (pos - smooth) * (1 - Math.exp(-dt / TAU));
 
   // la position de la main choisit l'image : c'est toi qui déroules la danse
   const i = clamp(Math.round(smooth * (SHEET.frames - 1)), 0, SHEET.frames - 1);
@@ -88,7 +120,9 @@ function render(ts) {
       `${(col / (SHEET.cols - 1)) * 100}% ${(row / (SHEET.rows - 1)) * 100}%`;
   }
 
-  trackDot.style.left = `${smooth * 100}%`;
+  const pt = arcPath.getPointAtLength(arcLen * clamp(smooth, 0, 1));
+  trackDot.style.left = `${pt.x * arcScale}px`;
+  trackDot.style.top = `${pt.y * arcScale}px`;
 
   requestAnimationFrame(render);
 }
@@ -121,19 +155,23 @@ function startSound() {
       if (k >= 1) clearInterval(timer);
     }, 40);
   }).catch(() => {
-    btnSound.textContent = '🔇';
+    showSoundIcon(false);
   });
+}
+
+function showSoundIcon(on) {
+  icoSoundOn.hidden = !on;
+  icoSoundOff.hidden = on;
+  btnSound.setAttribute('aria-label', on ? 'Couper le son' : 'Remettre le son');
 }
 
 btnSound.addEventListener('click', () => {
   if (song.paused) {
     startSound();
-    btnSound.textContent = '🔊';
-    btnSound.setAttribute('aria-label', 'Couper le son');
+    showSoundIcon(true);
   } else {
     song.pause();
-    btnSound.textContent = '🔇';
-    btnSound.setAttribute('aria-label', 'Remettre le son');
+    showSoundIcon(false);
   }
 });
 
@@ -161,16 +199,33 @@ async function fetchWithProgress(url, onProgress) {
   return out;
 }
 
+/* Le modèle est stocké pré-compressé : 5,6 Mo au lieu de 7,5 Mo à télécharger,
+   quelle que soit la configuration du serveur. On vérifie la signature gzip
+   plutôt que de la supposer, au cas où un serveur le décompresserait déjà. */
+async function loadModelBytes(onProgress) {
+  const bytes = await fetchWithProgress('vendor/hand_landmarker.task.gz', onProgress);
+
+  const isGzip = bytes.length > 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+  if (!isGzip) return bytes;
+
+  if (typeof DecompressionStream === 'undefined') {
+    throw new Error('navigateur trop ancien');
+  }
+  const stream = new Blob([bytes]).stream()
+    .pipeThrough(new DecompressionStream('gzip'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
 async function loadModel() {
   if (landmarker) return;
 
   loader.hidden = false;
   loaderText.textContent = 'Chargement du modèle… 0 %';
 
-  const bytes = await fetchWithProgress('vendor/hand_landmarker.task', (p) => {
+  const bytes = await loadModelBytes((p) => {
     const pct = Math.round(p * 100);
     loaderBar.style.width = `${pct}%`;
-    loaderText.textContent = `Chargement du modèle… ${pct} %`;
+    loaderText.textContent = `Chargement… ${pct} %`;
   });
 
   loaderText.textContent = 'Initialisation…';
@@ -256,7 +311,8 @@ async function startCamera() {
 
   cam.hidden = false;
   camOn = true;
-  btnCam.textContent = 'Couper la caméra';
+  btnCam.classList.add('is-on');
+  btnCam.setAttribute('aria-label', 'Couper la caméra');
 
   try {
     await loadModel();
@@ -280,7 +336,8 @@ function stopCamera() {
   camFeed.srcObject = null;
   cam.hidden = true;
   handDot.hidden = true;
-  btnCam.textContent = 'Activer la caméra';
+  btnCam.classList.remove('is-on');
+  btnCam.setAttribute('aria-label', 'Activer la caméra');
   if (mode === 'hand') {
     mode = 'idle';
     setStatus('caméra coupée');
@@ -382,4 +439,4 @@ $('btnStartNoCam').addEventListener('click', () => {
 
 // on précharge la sprite pour éviter un clignotement au démarrage
 const pre = new Image();
-pre.src = isSmallScreen ? 'assets/ayo_sheet_sm.jpg' : 'assets/ayo_sheet.jpg';
+pre.src = SHEET_URL;

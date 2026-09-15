@@ -14,7 +14,12 @@
 
 <title>Ayo — danse avec ta main</title>
 <link rel="stylesheet" href="style.css">
-<link rel="preload" href="assets/ayo_sheet.jpg" as="image">
+<!-- on ne précharge que la sprite réellement utilisée : les conditions
+     reproduisent exactement le test fait dans app.js -->
+<link rel="preload" as="image" href="assets/ayo_sheet_sm.webp"
+      media="(max-width: 560px), (max-height: 560px)">
+<link rel="preload" as="image" href="assets/ayo_sheet.webp"
+      media="(min-width: 561px) and (min-height: 561px)">
 </head>
 <body>
 
@@ -26,29 +31,51 @@
   </div>
 </main>
 
-<!-- ————— Barre de position ————— -->
-<div class="track" aria-hidden="true">
-  <div class="track-line"></div>
-  <div id="trackDot" class="track-dot"></div>
-  <div class="track-labels"><span>◀ gauche</span><span>droite ▶</span></div>
-</div>
-
-<!-- ————— HUD ————— -->
-<header class="topbar">
+<!-- ————— Arc de position + texte ————— -->
+<footer class="bottom">
+  <div class="track" aria-hidden="true">
+    <svg class="arc" viewBox="0 0 220 56" preserveAspectRatio="xMidYMid meet">
+      <path id="arcPath" d="M 8 8 Q 110 52 212 8" fill="none"
+            stroke="rgba(0,0,0,.16)" stroke-width="4" stroke-linecap="round"/>
+    </svg>
+    <div id="trackDot" class="track-dot"></div>
+  </div>
   <p id="status" class="status" role="status" aria-live="polite">Prêt</p>
-</header>
+</footer>
 
+<!-- ————— Contrôles ————— -->
 <div class="controls">
-  <button id="btnSound" class="btn btn-icon" type="button" aria-label="Couper le son">🔊</button>
-  <button id="btnCam" class="btn" type="button">Activer la caméra</button>
-  <button id="btnInfo" class="btn btn-icon" type="button" aria-label="Comment ça marche">i</button>
+  <button id="btnSound" class="btn btn-icon" type="button" aria-label="Couper le son" title="Son">
+    <svg class="ico" id="icoSoundOn" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 9.5h3.2L12 5.5v13L7.2 14.5H4z"/>
+      <path d="M16.2 8.8a4.2 4.2 0 0 1 0 6.4M18.8 6a7.6 7.6 0 0 1 0 12"/>
+    </svg>
+    <svg class="ico" id="icoSoundOff" viewBox="0 0 24 24" aria-hidden="true" hidden>
+      <path d="M4 9.5h3.2L12 5.5v13L7.2 14.5H4z"/>
+      <path d="M16.5 9.5l5 5M21.5 9.5l-5 5"/>
+    </svg>
+  </button>
+
+  <button id="btnCam" class="btn btn-icon" type="button" aria-label="Activer la caméra" title="Caméra">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3.5 7.5h10a1.5 1.5 0 0 1 1.5 1.5v6a1.5 1.5 0 0 1-1.5 1.5h-10A1.5 1.5 0 0 1 2 15V9a1.5 1.5 0 0 1 1.5-1.5z"/>
+      <path d="M15 11.2l5-2.7v7l-5-2.7z"/>
+    </svg>
+  </button>
+
+  <button id="btnInfo" class="btn btn-icon" type="button" aria-label="Comment ça marche" title="Infos">
+    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M12 11v5.5"/>
+      <circle cx="12" cy="7.8" r=".9" fill="currentColor" stroke="none"/>
+    </svg>
+  </button>
 </div>
 
 <!-- ————— Aperçu caméra ————— -->
 <aside id="cam" class="cam" hidden>
   <video id="camFeed" class="cam-feed" playsinline muted></video>
   <div id="handDot" class="hand-dot" hidden></div>
-  <p class="cam-label">aperçu</p>
 </aside>
 
 <!-- ————— Écran d'accueil ————— -->
@@ -91,7 +118,9 @@
   <div class="loader-track"><div id="loaderBar" class="loader-bar"></div></div>
 </div>
 
-<audio id="song" src="assets/song.mp3" loop preload="auto"></audio>
+<!-- « metadata » : le morceau se charge en flux au démarrage au lieu d'être
+     téléchargé d'emblée, ce qui laisse la bande passante à l'affichage -->
+<audio id="song" src="assets/song.mp3" loop preload="metadata"></audio>
 
 <script type="module" src="app.js"></script>
 </body>

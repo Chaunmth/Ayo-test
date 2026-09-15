@@ -22,8 +22,11 @@ import sys
 import tempfile
 
 SRC = "ayo.mp4"
-OUT_BIG = "assets/ayo_sheet.jpg"
-OUT_SM = "assets/ayo_sheet_sm.jpg"
+OUT_BIG = "assets/ayo_sheet.webp"
+OUT_SM = "assets/ayo_sheet_sm.webp"
+
+# WebP plutôt que JPEG : à qualité égale (~39 dB de PSNR), 395 K contre 746 K.
+Q_BIG, Q_SM = 82, 80
 
 COLS, ROWS = 8, 4              # grille de la sprite sheet
 CELL_W, CELL_H = 369, 720      # taille d'une case
@@ -100,16 +103,25 @@ def normalize(frames, tmp):
 
 
 def tile(tmp, count):
+    """Assemble la grille en PNG (sans perte) puis encode en WebP."""
+    from PIL import Image
+
     pattern = os.path.join(tmp, "n%02d.png")
     if count != COLS * ROWS:
         sys.exit(f"{count} images pour une grille {COLS}×{ROWS} : ajuster COLS/ROWS")
 
     os.makedirs("assets", exist_ok=True)
-    run(["ffmpeg", "-v", "error", "-y", "-framerate", "1", "-i", pattern,
-         "-vf", f"tile={COLS}x{ROWS}", "-frames:v", "1", "-q:v", "3", OUT_BIG])
-    run(["ffmpeg", "-v", "error", "-y", "-framerate", "1", "-i", pattern,
-         "-vf", f"scale={CELL_W_SM}:{CELL_H_SM}:flags=lanczos,tile={COLS}x{ROWS}",
-         "-frames:v", "1", "-q:v", "4", OUT_SM])
+    for out, cell_w, cell_h, quality in (
+        (OUT_BIG, CELL_W, CELL_H, Q_BIG),
+        (OUT_SM, CELL_W_SM, CELL_H_SM, Q_SM),
+    ):
+        png = os.path.join(tmp, f"tile_{cell_w}.png")
+        vf = f"tile={COLS}x{ROWS}"
+        if (cell_w, cell_h) != (CELL_W, CELL_H):
+            vf = f"scale={cell_w}:{cell_h}:flags=lanczos," + vf
+        run(["ffmpeg", "-v", "error", "-y", "-framerate", "1", "-i", pattern,
+             "-vf", vf, "-frames:v", "1", png])
+        Image.open(png).convert("RGB").save(out, "WEBP", quality=quality, method=6)
 
 
 def main():

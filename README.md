@@ -33,6 +33,21 @@ Main à gauche, main à droite, et tu le pilotes image par image. Fonctionne aus
 Le traitement de l'image est local : la détection tourne dans le navigateur et
 la page est limitée par CSP à sa propre origine.
 
+## Poids
+
+| | |
+| --- | --- |
+| code (html + css + js) | 27 Ko |
+| sprite sheet | 454 Ko sur ordinateur, 203 Ko sur mobile |
+| musique | 1,40 Mo, chargée en flux |
+| **au premier affichage** | **~230 Ko sur mobile**, le reste suit |
+
+Le suivi de la main n'est téléchargé que si l'utilisateur active la caméra :
+5,54 Mo pour le modèle (stocké pré-compressé, décompressé par la page : 2 Mo
+économisés quelle que soit la configuration du serveur), 8,98 Mo pour le
+runtime WebAssembly — 2,72 Mo si le serveur le sert compressé, ce que fait
+GitHub Pages pour ce type de fichier. Le navigateur le met ensuite en cache.
+
 ## Développement
 
 ```bash

@@ -19,6 +19,9 @@ const TYPES = {
   '.json': 'application/json; charset=utf-8',
   '.wasm': 'application/wasm',
   '.task': 'application/octet-stream',
+  // servi tel quel, sans Content-Encoding : c'est la page qui décompresse
+  '.gz': 'application/gzip',
+  '.webp': 'image/webp',
   '.mp3': 'audio/mpeg',
   '.mp4': 'video/mp4',
   '.jpg': 'image/jpeg',
@@ -44,8 +47,15 @@ http.createServer((req, res) => {
       return;
     }
 
-    const type = TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream';
+    const ext = path.extname(file).toLowerCase();
+    const type = TYPES[ext] || 'application/octet-stream';
     const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+
+    // le code n'est jamais mis en cache en développement : sinon le navigateur
+    // sert un ancien app.js et on croit déboguer la nouvelle version
+    const noCache = ['.html', '.css', '.js', '.mjs'].includes(ext)
+      ? { 'Cache-Control': 'no-store' }
+      : {};
 
     // les requêtes Range sont nécessaires pour naviguer dans l'audio
     if (m) {
@@ -69,6 +79,7 @@ http.createServer((req, res) => {
       'Content-Type': type,
       'Content-Length': stat.size,
       'Accept-Ranges': 'bytes',
+      ...noCache,
     });
     fs.createReadStream(file).pipe(res);
   });
