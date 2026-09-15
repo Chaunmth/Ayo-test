@@ -8,7 +8,9 @@
   --bg: #d6d4d2;
   --ink: #23211f;
   --ink-soft: #6a6660;
-  --green: #0a6b4f;
+  /* contraste vérifié : 4,9:1 avec du texte blanc dessus (AA) */
+  --gold: #8a6d1f;
+  --gold-dark: #6f5818;
   --red: #d6332b;
   --yellow: #edb92e;
   --card: rgba(255, 255, 255, .82);
@@ -131,7 +133,7 @@ body {
   color: var(--ink-soft);
   text-align: center;
 }
-.status.ok   { color: var(--green); }
+.status.ok   { color: var(--gold); }
 .status.warn { color: var(--red); }
 
 /* ————— Contrôles, en haut à droite ————— */
@@ -156,13 +158,13 @@ body {
   stroke-linejoin: round;
 }
 
-/* caméra active : le bouton passe au vert */
+/* caméra active : le bouton passe au doré */
 .btn.is-on {
-  background: var(--green);
-  border-color: var(--green);
+  background: var(--gold);
+  border-color: var(--gold);
   color: #fff;
 }
-.btn.is-on:hover { background: #085c43; }
+.btn.is-on:hover { background: var(--gold-dark); }
 
 /* ————— Boutons ————— */
 
@@ -181,7 +183,7 @@ body {
 }
 .btn:hover { background: #fff; }
 .btn:active { transform: scale(.97); }
-.btn:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
 /* taille fixe et contenu centré : le bouton ne peut pas se déformer,
    quoi qu'on mette dedans */
@@ -197,14 +199,14 @@ body {
 }
 
 .btn-primary {
-  background: var(--green);
-  border-color: var(--green);
+  background: var(--gold);
+  border-color: var(--gold);
   color: #fff;
   font-weight: 600;
   padding: 12px 22px;
   font-size: 15px;
 }
-.btn-primary:hover { background: #085c43; }
+.btn-primary:hover { background: var(--gold-dark); }
 
 /* ————— Aperçu caméra ————— */
 
@@ -271,7 +273,7 @@ body {
   line-height: 1.15;
   letter-spacing: -.02em;
 }
-.title .hl { color: var(--green); }
+.title .hl { color: var(--gold); }
 
 .title-sm {
   margin: 0 0 14px;
@@ -353,7 +355,7 @@ body {
   height: 100%;
   width: 0%;
   border-radius: 99px;
-  background: var(--green);
+  background: var(--gold);
   transition: width .2s;
 }
 

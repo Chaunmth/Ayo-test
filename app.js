@@ -162,8 +162,11 @@ function startSound() {
 }
 
 function showSoundIcon(on) {
-  icoSoundOn.hidden = !on;
-  icoSoundOff.hidden = on;
+  // `.hidden` est une propriété d'HTMLElement : elle n'a aucun effet sur un
+  // <svg>, qui est un SVGElement. On bascule l'attribut directement, qui lui
+  // fonctionne sur n'importe quel élément et déclenche la règle [hidden] du CSS.
+  icoSoundOn.toggleAttribute('hidden', !on);
+  icoSoundOff.toggleAttribute('hidden', on);
   btnSound.setAttribute('aria-label', on ? 'Couper le son' : 'Remettre le son');
 }
 
@@ -452,7 +455,7 @@ $('btnStartCam').addEventListener('click', () => {
 
 $('btnStartNoCam').addEventListener('click', () => {
   begin();
-  setStatus(isSmallScreen ? 'glisse ton doigt sur l’écran' : 'bouge la souris');
+  setStatus(isSmallScreen ? "glisse ton doigt sur l'écran" : 'bouge la souris');
 });
 
 // on précharge la sprite pour éviter un clignotement au démarrage
