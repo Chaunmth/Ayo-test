@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- Sécurité : tout vient de cette origine. connect-src 'self' interdit au code
+     de la page d'envoyer quoi que ce soit ailleurs (donc aucune image de caméra
+     ne peut sortir de l'appareil). 'wasm-unsafe-eval' est requis par MediaPipe. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#d6d4d2">
+<meta name="description" content="Fais danser Ayo, la mascotte de Dakar 2026, en bougeant la main devant ta caméra. Tout se passe dans ton navigateur.">
+
+<title>Ayo — danse avec ta main</title>
+<link rel="stylesheet" href="style.css">
+<link rel="preload" href="assets/ayo_sheet.jpg" as="image">
+</head>
+<body>
+
+<!-- ————— Scène ————— -->
+<main id="stage" class="stage">
+  <div id="puppet" class="puppet">
+    <div id="ayo" class="ayo"></div>
+    <div class="shadow"></div>
+  </div>
+</main>
+
+<!-- ————— Barre de position ————— -->
+<div class="track" aria-hidden="true">
+  <div class="track-line"></div>
+  <div id="trackDot" class="track-dot"></div>
+  <div class="track-labels"><span>◀ gauche</span><span>droite ▶</span></div>
+</div>
+
+<!-- ————— HUD ————— -->
+<header class="topbar">
+  <p id="status" class="status" role="status" aria-live="polite">Prêt</p>
+</header>
+
+<div class="controls">
+  <button id="btnSound" class="btn btn-icon" type="button" aria-label="Couper le son">🔊</button>
+  <button id="btnCam" class="btn" type="button">Activer la caméra</button>
+  <button id="btnInfo" class="btn btn-icon" type="button" aria-label="Comment ça marche">i</button>
+</div>
+
+<!-- ————— Aperçu caméra ————— -->
+<aside id="cam" class="cam" hidden>
+  <video id="camFeed" class="cam-feed" playsinline muted></video>
+  <div id="handDot" class="hand-dot" hidden></div>
+  <p class="cam-label">aperçu</p>
+</aside>
+
+<!-- ————— Écran d'accueil ————— -->
+<div id="intro" class="sheet">
+  <div class="sheet-inner">
+    <h1 class="title">Fais danser <span class="hl">Ayo</span></h1>
+    <p class="lede">
+      Bouge la main devant ta caméra : Ayo te suit de gauche à droite.
+      Ça marche aussi à la souris ou au doigt.
+    </p>
+
+    <div class="actions">
+      <button id="btnStartCam" class="btn btn-primary" type="button">Activer la caméra</button>
+      <button id="btnStartNoCam" class="btn" type="button">Sans caméra</button>
+    </div>
+    <p class="fineprint">Tout se passe dans ton navigateur.</p>
+  </div>
+</div>
+
+<!-- ————— Panneau confidentialité ————— -->
+<div id="infoSheet" class="sheet" hidden>
+  <div class="sheet-inner">
+    <h2 class="title-sm">Comment ça marche</h2>
+    <p class="lede">
+      Ta caméra sert de capteur de mouvement : l'image est analysée en direct
+      dans ton navigateur pour repérer ta main, puis Ayo suit son déplacement.
+    </p>
+    <p class="fineprint">
+      Le bouton « Couper la caméra » l'arrête quand tu veux.
+    </p>
+    <div class="actions">
+      <button id="btnInfoClose" class="btn btn-primary" type="button">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ————— Chargement du modèle ————— -->
+<div id="loader" class="loader" hidden>
+  <p id="loaderText" class="loader-text">Chargement…</p>
+  <div class="loader-track"><div id="loaderBar" class="loader-bar"></div></div>
+</div>
+
+<audio id="song" src="assets/song.mp3" loop preload="auto"></audio>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

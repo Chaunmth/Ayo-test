@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ayo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["/Users/User/Documents/ayo/dev-server.js"],
+      "port": 8770
+    }
+  ]
+}
