@@ -210,7 +210,7 @@ body {
 
 .cam {
   position: fixed;
-  left: max(14px, env(safe-area-inset-left));
+  right: max(14px, env(safe-area-inset-right));
   bottom: max(14px, env(safe-area-inset-bottom));
   width: clamp(240px, 30vw, 440px);
   aspect-ratio: 4 / 3;
@@ -364,13 +364,11 @@ body {
   .puppet { margin-bottom: clamp(104px, 17vh, 140px); }
   .track { width: 126px; }
   .controls { gap: 6px; }
-  /* l'aperçu passe en haut à gauche : le bas est pris par l'arc et le texte,
-     le haut à droite par les boutons */
+  /* à droite aussi sur mobile, mais glissé sous les boutons : en bas il
+     entrerait dans l'arc, trop large pour la largeur d'un téléphone */
   .cam {
-    top: max(14px, env(safe-area-inset-top));
+    top: calc(max(14px, env(safe-area-inset-top)) + 48px);
     bottom: auto;
-    right: auto;
-    left: max(14px, env(safe-area-inset-left));
     width: clamp(150px, 44vw, 210px);
   }
 }
