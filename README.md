@@ -22,7 +22,7 @@ Main à gauche, main à droite, et tu le pilotes image par image. Fonctionne aus
 
 | Choix | Raison |
 | --- | --- |
-| Images normalisées au moment du build | le long du clip, Ayo recule en dansant : 18 % de hauteur en moins et des pieds qui remontent. Piloté à la main, ce glissement se verrait comme un défaut |
+| Recadrage fixe, identique sur les 32 images | le mouvement réel est conservé : le long du clip, Ayo recule en dansant (18 % de hauteur en moins, pieds qui remontent de 91 px). C'est la danse filmée, volontairement pas redressée |
 | Sprite sheet plutôt que `<video>` scrubbé | le seek vidéo est lent et saccadé, surtout sur iOS |
 | Fond de page identique au fond de la sprite (`#d6d4d2`) | le bord de l'image reste invisible |
 | Préchauffage du modèle pendant le chargement | la première inférence compile les shaders GPU et bloque plusieurs secondes |
@@ -38,9 +38,9 @@ la page est limitée par CSP à sa propre origine.
 | | |
 | --- | --- |
 | code (html + css + js) | 27 Ko |
-| sprite sheet | 454 Ko sur ordinateur, 203 Ko sur mobile |
+| sprite sheet | 436 Ko sur ordinateur, 191 Ko sur mobile |
 | musique | 1,40 Mo, chargée en flux |
-| **au premier affichage** | **~230 Ko sur mobile**, le reste suit |
+| **au premier affichage** | **~220 Ko sur mobile**, le reste suit |
 
 Le suivi de la main n'est téléchargé que si l'utilisateur active la caméra :
 5,54 Mo pour le modèle (stocké pré-compressé, décompressé par la page : 2 Mo
@@ -66,9 +66,11 @@ python3 tools/build-sprites.py          # sprite sheets, depuis ayo.mp4
 ffmpeg -ss 60 -i "source.mp3" -c:a libmp3lame -b:a 128k assets/song.mp3
 ```
 
-Le script mesure chaque image, impose une hauteur constante et une ligne de sol
-fixe, puis assemble la grille 8×4. Il est déterministe : relancé, il produit des
-fichiers identiques.
+Le script isole la silhouette sur le fond uni, en déduit un rectangle de
+recadrage valable pour toutes les images, puis assemble la grille 8×4. Le
+recadrage étant le même partout, le déplacement d'Ayo dans le cadre est
+préservé. Le script est déterministe : relancé, il produit des fichiers
+identiques.
 
 ## Structure
 
