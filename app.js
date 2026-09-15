@@ -60,6 +60,8 @@ let landmarker = null;
 let stream = null;
 let camOn = false;
 let camWasOn = false;
+let camStarting = false;
+let loopId = 0;         // identifie la boucle de détection en cours
 let lastStamp = -1;
 let started = false;
 
@@ -284,6 +286,18 @@ function camErrorMessage(err) {
 }
 
 async function startCamera() {
+  // deux clics rapides, ou un retour d'arrière-plan pendant le chargement,
+  // lanceraient deux caméras et deux boucles de détection
+  if (camStarting || camOn) return;
+  camStarting = true;
+  try {
+    await startCameraInner();
+  } finally {
+    camStarting = false;
+  }
+}
+
+async function startCameraInner() {
   if (!window.isSecureContext) {
     setStatus('la caméra exige une connexion sécurisée (https)', 'warn');
     return;
@@ -323,8 +337,11 @@ async function startCamera() {
     return;
   }
 
+  // la caméra a pu être coupée pendant le chargement du modèle
+  if (!camOn) return;
+
   setStatus('montre ta main à la caméra');
-  detectLoop();
+  detectLoop(++loopId);
 }
 
 function stopCamera() {
@@ -351,8 +368,9 @@ btnCam.addEventListener('click', () => {
 
 // ————— Détection —————
 
-function detectLoop() {
-  if (!camOn || !landmarker) return;
+function detectLoop(id) {
+  // une boucle plus récente a pris le relais
+  if (id !== loopId || !camOn || !landmarker) return;
 
   const now = performance.now();
 
@@ -396,7 +414,7 @@ function detectLoop() {
 
   // l'inférence coûte ~8 ms : 30 détections/s sur ordinateur (latence basse),
   // 20 sur mobile (on ménage la batterie)
-  setTimeout(detectLoop, isSmallScreen ? 50 : 33);
+  setTimeout(() => detectLoop(id), isSmallScreen ? 50 : 33);
 }
 
 // ————— Hygiène : on relâche la caméra dès que la page passe en arrière-plan —————

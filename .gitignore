@@ -2,3 +2,6 @@
 
 # Sources locales : seuls les assets dérivés (assets/) sont publiés
 VJ - Kaay Waay (clip officiel).mp3
+
+# Config locale de l'éditeur (contient des chemins absolus)
+.claude/
