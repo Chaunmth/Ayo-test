@@ -46,10 +46,9 @@ body {
   cursor: crosshair;
 }
 
+/* Ayo est fixe : seule l'image affichée change */
 .puppet {
   position: relative;
-  will-change: transform;
-  transform-origin: 50% 100%;
   /* on laisse la place à la barre de position et aux boutons en bas */
   margin-bottom: clamp(104px, 14vh, 140px);
 }

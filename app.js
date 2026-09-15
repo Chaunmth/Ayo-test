@@ -2,15 +2,15 @@
    Ayo — danse avec ta main
 
    Principe :
-   · la danse est une sprite sheet de 32 images jouée en aller-retour (temps)
-   · la position horizontale de ta main pilote le déplacement d'Ayo à l'écran
+   · Ayo reste fixe au centre
+   · la position horizontale de ta main choisit l'image de la danse parmi 32
+     (main à gauche = début du mouvement, main à droite = fin)
    · tout le traitement d'image se fait ici, dans le navigateur
    ———————————————————————————————————————————————— */
 
 const $ = (id) => document.getElementById(id);
 
 const stage      = $('stage');
-const puppet     = $('puppet');
 const ayo        = $('ayo');
 const trackDot   = $('trackDot');
 const statusEl   = $('status');
@@ -28,9 +28,9 @@ const btnCam     = $('btnCam');
 
 // ————— Réglages —————
 
-const SHEET   = { cols: 8, rows: 4, frames: 32, fps: 30 };
+const SHEET   = { cols: 8, rows: 4, frames: 32 };
 const MARGIN  = 0.15;   // bords du champ caméra ignorés (pas besoin de tendre le bras)
-const SMOOTH  = 0.16;   // lissage : 0 = figé, 1 = brut
+const SMOOTH  = 0.18;   // lissage : 0 = figé, 1 = brut
 const LOST_MS = 1200;   // délai avant de considérer la main perdue
 const VOLUME  = 0.8;
 
@@ -40,10 +40,9 @@ const isSmallScreen = Math.min(window.innerWidth, window.innerHeight) < 560;
 
 let pos = 0.5;          // cible 0..1
 let smooth = 0.5;       // valeur lissée appliquée
-let prev = 0.5;
 let mode = 'idle';      // 'hand' | 'pointer' | 'idle'
 let handSeenAt = 0;
-let travel = 0;         // amplitude de déplacement en px
+let shownFrame = -1;    // dernière image affichée
 
 let landmarker = null;
 let stream = null;
@@ -65,49 +64,29 @@ if (isSmallScreen) {
   ayo.style.backgroundImage = 'url("assets/ayo_sheet_sm.jpg")';
 }
 
-// ————— Mesure de l'amplitude de déplacement —————
-
-function measure() {
-  const s = stage.getBoundingClientRect();
-  const a = ayo.getBoundingClientRect();
-  travel = Math.max(0, (s.width - a.width) / 2 - 10);
-}
-window.addEventListener('resize', measure);
-window.addEventListener('orientationchange', () => setTimeout(measure, 300));
-
 // ————— Boucle de rendu —————
 
-function danceFrame(ts) {
-  // aller-retour : 0 → 31 → 0, sans saut de taille à la boucle
-  const n = SHEET.frames;
-  const span = n * 2 - 2;
-  const i = Math.floor((ts / 1000) * SHEET.fps) % span;
-  return i < n ? i : span - i;
-}
-
 function render(ts) {
-  // personne aux commandes : léger balancement automatique
+  // personne aux commandes : Ayo danse tout seul, doucement
   if (mode === 'idle') {
-    pos = 0.5 + Math.sin(ts / 2600) * 0.32;
+    pos = 0.5 + Math.sin(ts / 2400) * 0.45;
   } else if (mode === 'hand' && ts - handSeenAt > LOST_MS) {
     mode = 'idle';
     handDot.hidden = true;
     setStatus('montre ta main à la caméra');
   }
 
-  prev = smooth;
   smooth += (pos - smooth) * SMOOTH;
-  const vel = smooth - prev;
 
-  const x = (smooth - 0.5) * 2 * travel;
-  const tilt = clamp(vel * 240, -7, 7);
-  puppet.style.transform = `translate3d(${x.toFixed(1)}px,0,0) rotate(${tilt.toFixed(2)}deg)`;
-
-  const i = danceFrame(ts);
-  const col = i % SHEET.cols;
-  const row = (i / SHEET.cols) | 0;
-  ayo.style.backgroundPosition =
-    `${(col / (SHEET.cols - 1)) * 100}% ${(row / (SHEET.rows - 1)) * 100}%`;
+  // la position de la main choisit l'image : c'est toi qui déroules la danse
+  const i = clamp(Math.round(smooth * (SHEET.frames - 1)), 0, SHEET.frames - 1);
+  if (i !== shownFrame) {
+    shownFrame = i;
+    const col = i % SHEET.cols;
+    const row = (i / SHEET.cols) | 0;
+    ayo.style.backgroundPosition =
+      `${(col / (SHEET.cols - 1)) * 100}% ${(row / (SHEET.rows - 1)) * 100}%`;
+  }
 
   trackDot.style.left = `${smooth * 100}%`;
 
@@ -387,7 +366,6 @@ function begin() {
   if (started) return;
   started = true;
   intro.hidden = true;
-  measure();
   startSound();
   requestAnimationFrame(render);
 }
@@ -405,5 +383,3 @@ $('btnStartNoCam').addEventListener('click', () => {
 // on précharge la sprite pour éviter un clignotement au démarrage
 const pre = new Image();
 pre.src = isSmallScreen ? 'assets/ayo_sheet_sm.jpg' : 'assets/ayo_sheet.jpg';
-
-measure();
