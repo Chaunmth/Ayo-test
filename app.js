@@ -12,7 +12,6 @@ const $ = (id) => document.getElementById(id);
 
 const stage      = $('stage');
 const ayo        = $('ayo');
-const track      = document.querySelector('.track');
 const arcPath    = $('arcPath');
 const trackDot   = $('trackDot');
 const statusEl   = $('status');
@@ -42,7 +41,9 @@ const MARGIN  = 0.28;
 const TAU     = 0.09;
 const LOST_MS = 1200;   // délai avant de considérer la main perdue
 const VOLUME  = 0.8;
-const ARC_VB  = 220;    // largeur du viewBox de l'arc
+// dimensions du viewBox de l'arc (voir le <svg> dans index.html)
+const ARC_VB_W = 220;
+const ARC_VB_H = 56;
 
 // même condition que les <link rel="preload"> de index.html
 const isSmallScreen =
@@ -82,14 +83,6 @@ ayo.style.backgroundImage = `url("${SHEET_URL}")`;
 // ————— Position du repère sur l'arc —————
 
 const arcLen = arcPath.getTotalLength();
-let arcScale = 1;
-
-function measureArc() {
-  arcScale = track.getBoundingClientRect().width / ARC_VB;
-}
-window.addEventListener('resize', measureArc);
-window.addEventListener('orientationchange', () => setTimeout(measureArc, 300));
-measureArc();
 
 // ————— Boucle de rendu —————
 
@@ -122,9 +115,13 @@ function render(ts) {
       `${(col / (SHEET.cols - 1)) * 100}% ${(row / (SHEET.rows - 1)) * 100}%`;
   }
 
+  // En pourcentages du viewBox, et non en pixels mesurés : la boîte de l'arc
+  // a le même rapport que le viewBox, donc le repère suit la courbe quelle que
+  // soit la taille rendue — sans dépendre d'une mesure prise au chargement,
+  // qui pouvait être fausse sur mobile si la mise en page n'était pas stabilisée.
   const pt = arcPath.getPointAtLength(arcLen * clamp(smooth, 0, 1));
-  trackDot.style.left = `${pt.x * arcScale}px`;
-  trackDot.style.top = `${pt.y * arcScale}px`;
+  trackDot.style.left = `${(pt.x / ARC_VB_W) * 100}%`;
+  trackDot.style.top = `${(pt.y / ARC_VB_H) * 100}%`;
 
   requestAnimationFrame(render);
 }
